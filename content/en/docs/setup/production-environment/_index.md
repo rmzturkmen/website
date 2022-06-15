@@ -9,7 +9,7 @@ no_list: true
 A production-quality Kubernetes cluster requires planning and preparation.
 If your Kubernetes cluster is to run critical workloads, it must be configured to be resilient.
 This page explains steps you can take to set up a production-ready cluster,
-or to uprate an existing cluster for production use.
+or to promote an existing cluster for production use.
 If you're already familiar with production setup and want the links, skip to
 [What's next](#what-s-next).
 
@@ -49,7 +49,7 @@ access cluster resources. You can use role-based access control
 security mechanisms to make sure that users and workloads can get access to the
 resources they need, while keeping workloads, and the cluster itself, secure.
 You can set limits on the resources that users and workloads can access
-by managing [policies](https://kubernetes.io/docs/concepts/policy/) and
+by managing [policies](/docs/concepts/policy/) and
 [container resources](/docs/concepts/configuration/manage-resources-containers/).
 
 Before building a Kubernetes production environment on your own, consider
@@ -197,7 +197,7 @@ are some virtualization platforms that can be scripted to spin up new nodes
 based on demand.
 - *Set up node health checks*: For important workloads, you want to make sure
 that the nodes and pods running on those nodes are healthy. Using the
-[Node Problem Detector](/docs/tasks/debug-application-cluster/monitor-node-health/)
+[Node Problem Detector](/docs/tasks/debug/debug-cluster/monitor-node-health/)
 daemon, you can ensure your nodes are healthy.
 
 ## Production user management
@@ -271,7 +271,7 @@ for information on creating a new service account. For example, you might want t
   - Add secrets that a pod could use to pull images from a particular container registry. See [Configure Service Accounts for Pods](/docs/tasks/configure-pod-container/configure-service-account/) for an example.
   - Assign RBAC permissions to a service account. See [ServiceAccount permissions](/docs/reference/access-authn-authz/rbac/#service-account-permissions) for details.
 
-## What's next {#what-s-next}
+## {{% heading "whatsnext" %}}
 
 - Decide if you want to build your own production Kubernetes or obtain one from
 available [Turnkey Cloud Solutions](/docs/setup/production-environment/turnkey-solutions/)
@@ -286,8 +286,8 @@ and the
 deployment methods.
 - Configure user management by determining your
 [Authentication](/docs/reference/access-authn-authz/authentication/) and
-[Authorization](docs/reference/access-authn-authz/authorization/) methods.
+[Authorization](/docs/reference/access-authn-authz/authorization/) methods.
 - Prepare for application workloads by setting up
-[resource limits](docs/tasks/administer-cluster/manage-resources/),
+[resource limits](/docs/tasks/administer-cluster/manage-resources/),
 [DNS autoscaling](/docs/tasks/administer-cluster/dns-horizontal-autoscaling/)
 and [service accounts](/docs/reference/access-authn-authz/service-accounts-admin/).

@@ -15,18 +15,25 @@ weight: 20
 
 <!-- body -->
 
+쿠버네티스 {{< skew currentVersion >}}에서는 
+{{< glossary_tooltip term_id="cri" text="컨테이너 런타임 인터페이스">}}(CRI) 요구사항을 만족하는 
+런타임을 사용해야 한다.
+
+더 자세한 정보는 [CRI 버전 지원](#cri-versions)을 참조한다.
+
 이 페이지에는 리눅스 환경의 쿠버네티스에서 여러 공통 컨테이너 런타임을 사용하는 방법에 대한
 세부 정보가 있다.
 
 - [containerd](#containerd)
 - [CRI-O](#cri-o)
-- [도커](#도커)
+- [도커 엔진](#docker)
+- [미란티스 컨테이너 런타임](#mcr)
 
 {{< note >}}
 다른 운영 체제의 경우, 해당 플랫폼과 관련된 문서를 찾아보자.
 {{< /note >}}
 
-## Cgroup 드라이버
+## cgroup 드라이버
 
 Control group은 프로세스에 할당된 리소스를 제한하는데 사용된다.
 
@@ -57,18 +64,65 @@ kubelet을 재시작하는 것은 에러를 해결할 수 없을 것이다.
 교체하거나, 자동화를 사용하여 다시 설치한다.
 {{< /caution >}}
 
+## cgroup v2
+
+cgroup v2는 cgroup Linux API의 다음 버전이다. 
+cgroup v1과는 다르게 각 컨트롤러마다 다른 계층 대신 단일 계층이 있다.
+
+새 버전은 cgroup v1에 비해 몇 가지 향상된 기능을 제공하며, 개선 사항 중 일부는 다음과 같다.
+
+- API를 더 쉽고 깔끔하게 사용할 수 있음
+- 컨테이너로의 안전한 하위 트리 위임
+- 압력 중지 정보와 같은 새로운 기능
+
+일부 컨트롤러는 cgroup v1에 의해 관리되고 다른 컨트롤러는 cgroup v2에 의해 관리되는 하이브리드 구성을 지원하더라도, 
+쿠버네티스는 모든 컨트롤러를 관리하기 위해 
+동일한 cgroup 버전만 지원한다.
+
+systemd가 기본적으로 cgroup v2를 사용하지 않는 경우, 커널 명령줄에 `systemd.unified_cgroup_hierarchy=1`을 
+추가하여 cgroup v2를 사용하도록 시스템을 구성할 수 있다.
+
+```shell
+# 이 예제는 리눅스 OS에서 DNF 패키지 관리자를 사용하는 경우에 대한 것이다.
+# 리눅스 커널이 사용하는 커맨드 라인을 설정하기 위해 
+# 사용자의 시스템이 다른 방법을 사용하고 있을 수도 있다.
+sudo dnf install -y grubby && \
+  sudo grubby \
+  --update-kernel=ALL \
+  --args="systemd.unified_cgroup_hierarchy=1"
+```
+
+커널이 사용하는 커맨드 라인을 업데이트하려면, 
+변경 사항을 적용하기 위해 노드를 재시작해야 한다.
+
+cgroup v2로 전환할 때 사용자가 노드 또는 컨테이너 내에서 
+cgroup 파일 시스템에 직접 접근하지 않는 한 사용자 경험에 현저한 차이가 없어야 한다.
+
+cgroup v2를 사용하려면 CRI 런타임에서도 cgroup v2를 지원해야 한다.
+
 ### kubeadm으로 생성한 클러스터의 드라이버를 `systemd`로 변경하기
 
 kubeadm으로 생성한 클러스터의 cgroup 드라이버를 `systemd`로 변경하려면
 [변경 가이드](/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/)를 참고한다.
 
+## CRI 버전 지원 {#cri-versions}
+
+사용할 컨테이너 런타임이 적어도 CRI의 v1alpha2 이상을 지원해야 한다.
+
+쿠버네티스 {{< skew currentVersion >}} 버전에서는 기본적으로 CRI API 중 v1을 사용한다.
+컨테이너 런타임이 v1 API를 지원하지 않으면, 
+kubelet은 대신 (사용 중단된) v1alpha2 API를 사용하도록 설정된다.
+
 ## 컨테이너 런타임
 
 {{% thirdparty-content %}}
 
+
 ### containerd
 
-이 섹션에는 containerd 를 CRI 런타임으로 사용하는 데 필요한 단계가 포함되어 있다.
+이 섹션에는 containerd를 CRI 런타임으로 사용하는 데 필요한 단계가 포함되어 있다.
+
+다음 명령을 사용하여 시스템에 containerd를 설치한다.
 
 필수 구성 요소를 설치 및 구성한다.
 
@@ -97,7 +151,10 @@ containerd를 설치한다.
 {{< tabs name="tab-cri-containerd-installation" >}}
 {{% tab name="Linux" %}}
 
-1. 공식 도커 리포지터리에서 `containerd.io` 패키지를 설치한다. 각 리눅스 배포한에 대한 도커 리포지터리를 설정하고 `containerd.io` 패키지를 설치하는 방법은 [도커 엔진 설치](https://docs.docker.com/engine/install/#server)에서 찾을 수 있다.
+1. 공식 도커 리포지터리에서 `containerd.io` 패키지를 설치한다.
+각 리눅스 배포판에 대한 도커 리포지터리를 설정하고
+`containerd.io` 패키지를 설치하는 방법은
+[도커 엔진 설치](https://docs.docker.com/engine/install/#server)에서 찾을 수 있다.
 
 2. containerd 설정
 
@@ -115,13 +172,13 @@ containerd를 설치한다.
 {{% /tab %}}
 {{% tab name="Windows (PowerShell)" %}}
 
-PowerShell 세션을 시작하고 `$Version`을 원하는 버전(예: `$Version:1.4.3`)으로 설정한 후 다음 명령을 실행한다.
+PowerShell 세션을 시작하고 `$Version`을 원하는 버전으로
+설정(예: `$Version:"1.4.3"`)한 후 다음 명령을 실행한다.
 
 1. containerd 다운로드
 
    ```powershell
-   curl.exe -L https://github.com/containerd/containerd/releases/download/v$Version/containerd-$Version-windows-amd64.tar.gz -o containerd-windows-amd64.tar.
-gz
+   curl.exe -L https://github.com/containerd/containerd/releases/download/v$Version/containerd-$Version-windows-amd64.tar.gz -o containerd-windows-amd64.tar.gz
    tar.exe xvf .\containerd-windows-amd64.tar.gz
    ```
 
@@ -242,7 +299,8 @@ sudo apt-get install cri-o cri-o-runc
 
 {{% tab name="Ubuntu" %}}
 
-다음의 운영 체제에서 CRI-O를 설치하려면, 환경 변수 `OS` 를 아래의 표에서 적절한 필드로 설정한다.
+다음의 운영 체제에서 CRI-O를 설치하려면, 환경 변수 `OS` 를
+아래의 표에서 적절한 필드로 설정한다.
 
 | 운영 체제          | `$OS`             |
 | ---------------- | ----------------- |
@@ -277,7 +335,8 @@ apt-get install cri-o cri-o-runc
 
 {{% tab name="CentOS" %}}
 
-다음의 운영 체제에서 CRI-O를 설치하려면, 환경 변수 `OS` 를 아래의 표에서 적절한 필드로 설정한다.
+다음의 운영 체제에서 CRI-O를 설치하려면, 환경 변수 `OS` 를
+아래의 표에서 적절한 필드로 설정한다.
 
 | 운영 체제          | `$OS`             |
 | ---------------- | ----------------- |
@@ -355,40 +414,28 @@ cgroup_manager = "cgroupfs"
 CRI-O의 cgroup 드라이버 구성을 동기화 상태로
 유지해야 한다.
 
-### 도커
+### 도커 엔진 {#docker}
 
-1. 각 노드에서 [도커 엔진 설치](https://docs.docker.com/engine/install/#server)에 따라 리눅스 배포판용 도커를 설치한다. 이 [의존성 파일](https://git.k8s.io/kubernetes/build/dependencies.yaml)에서 검증된 최신 버전의 도커를 찾을 수 있다.
+도커 엔진은 모든 것을 시작한 컨테이너 런타임이다. 
+이전에는 간단히 도커로 알려졌던 이 컨테이너 런타임은 다양한 형태로 사용할 수 있다.
+[도커 엔진 설치하기](https://docs.docker.com/engine/install/)에서 
+이 런타임 설치의 옵션들을 확인할 수 있다.
 
-2. 특히 컨테이너의 cgroup 관리에 systemd를 사용하도록 도커 데몬을 구성한다.
+도커 엔진은 쿠버네티스 {{< skew currentVersion >}}와 직접 호환되며, 이는 사용 중단된 `dockershim` 컴포넌트를 활용하기 때문에 가능하다. 
+더 많은 정보와 맥락을 보려면, [Dockershim 사용 중단 FAQ](/dockershim)를 참고한다.
 
-   ```shell
-   sudo mkdir /etc/docker
-   cat <<EOF | sudo tee /etc/docker/daemon.json
-   {
-     "exec-opts": ["native.cgroupdriver=systemd"],
-     "log-driver": "json-file",
-     "log-opts": {
-       "max-size": "100m"
-     },
-     "storage-driver": "overlay2"
-   }
-   EOF
-   ```
+지원되는 {{< glossary_tooltip term_id="cri" text="컨테이너 런타임 인터페이스">}}(CRI)를 통해 
+쿠버네티스에서 도커 엔진을 사용할 수 있게 해 주는 
+써드파티 어댑터를 찾아볼 수도 있다.
 
-   {{< note >}}
-   `overlay2`는 리눅스 커널 4.0 이상 또는 3.10.0-514 버전 이상을 사용하는 RHEL 또는 CentOS를 구동하는 시스템에서 선호하는 스토리지 드라이버이다.
-   {{< /note >}}
+다음 CRI 어댑터는 도커 엔진과 함께 동작하도록 설계되었다.
 
-3. 도커 재시작과 부팅시 실행되게 설정
+- 미란티스의 [`cri-dockerd`](https://github.com/Mirantis/cri-dockerd)
 
-   ```shell
-   sudo systemctl enable docker
-   sudo systemctl daemon-reload
-   sudo systemctl restart docker
-   ```
+### 미란티스 컨테이너 런타임 {#mcr}
 
-{{< note >}}
-더 자세한 내용은
-  - [도커 데몬 설정](https://docs.docker.com/config/daemon/)
-  - [systemd로 도커 제어](https://docs.docker.com/config/daemon/systemd/)
-{{< /note >}}
+[미란티스 컨테이너 런타임](https://docs.mirantis.com/mcr/20.10/overview.html)(MCR)은 상용 컨테이너 런타임이며 
+이전에는 도커 엔터프라이즈 에디션으로 알려져 있었다.
+
+오픈소스인 [`cri-dockerd`](https://github.com/Mirantis/cri-dockerd) 컴포넌트를 이용하여 쿠버네티스에서 미란티스 컨테이너 런타임을 사용할 수 있으며, 
+이 컴포넌트는 MCR에 포함되어 있다.

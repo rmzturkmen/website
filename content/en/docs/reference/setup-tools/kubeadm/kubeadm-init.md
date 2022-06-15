@@ -52,7 +52,7 @@ following steps:
 
 1. Makes all the necessary configurations for allowing node joining with the
    [Bootstrap Tokens](/docs/reference/access-authn-authz/bootstrap-tokens/) and
-   [TLS Bootstrap](/docs/reference/command-line-tools-reference/kubelet-tls-bootstrapping/)
+   [TLS Bootstrap](/docs/reference/access-authn-authz/kubelet-tls-bootstrapping/)
    mechanism:
 
    - Write a ConfigMap for making available all the information required
@@ -104,6 +104,10 @@ sudo kubeadm init --skip-phases=control-plane,etcd --config=configfile.yaml
 
 What this example would do is write the manifest files for the control plane and etcd in `/etc/kubernetes/manifests` based on the configuration in `configfile.yaml`. This allows you to modify the files and then skip these phases using `--skip-phases`. By calling the last command you will create a control plane node with the custom manifest files.
 
+{{< feature-state for_k8s_version="v1.22" state="beta" >}}
+
+Alternatively, you can use the `skipPhases` field under `InitConfiguration`.
+
 ### Using kubeadm init with a configuration file {#config-file}
 
 {{< caution >}}
@@ -122,8 +126,64 @@ The default configuration can be printed out using the
 If your configuration is not using the latest version it is **recommended** that you migrate using
 the [kubeadm config migrate](/docs/reference/setup-tools/kubeadm/kubeadm-config/) command.
 
-For more information on the fields and usage of the configuration you can navigate to our API reference
-page and pick a version from [the list](https://pkg.go.dev/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm#section-directories).
+For more information on the fields and usage of the configuration you can navigate to our
+[API reference page](/docs/reference/config-api/kubeadm-config.v1beta3/).
+
+### Using kubeadm init with feature gates {#feature-gates}
+
+Kubeadm supports a set of feature gates that are unique to kubeadm and can only be applied
+during cluster creation with `kubeadm init`. These features can control the behavior
+of the cluster. Feature gates are removed after a feature graduates to GA.
+
+To pass a feature gate you can either use the `--feature-gates` flag for
+`kubeadm init`, or you can add items into the `featureGates` field when you pass
+a [configuration file](/docs/reference/config-api/kubeadm-config.v1beta3/#kubeadm-k8s-io-v1beta3-ClusterConfiguration)
+using `--config`.
+
+Passing [feature gates for core Kubernetes components](/docs/reference/command-line-tools-reference/feature-gates)
+directly to kubeadm is not supported. Instead, it is possible to pass them by
+[Customizing components with the kubeadm API](/docs/setup/production-environment/tools/kubeadm/control-plane-flags/).
+
+List of feature gates:
+
+{{< table caption="kubeadm feature gates" >}}
+Feature | Default | Alpha | Beta
+:-------|:--------|:------|:-----
+`PublicKeysECDSA` | `false` | 1.19 | -
+`RootlessControlPlane` | `false` | 1.22 | -
+`UnversionedKubeletConfigMap` | `true` | 1.22 | 1.23
+{{< /table >}}
+
+{{< note >}}
+Once a feature gate goes GA it is removed from this list as its value becomes locked to `true` by default.
+{{< /note >}}
+
+Feature gate descriptions:
+
+`PublicKeysECDSA`
+: Can be used to create a cluster that uses ECDSA certificates instead of the default RSA algorithm.
+Renewal of existing ECDSA certificates is also supported using `kubeadm certs renew`, but you cannot
+switch between the RSA and ECDSA algorithms on the fly or during upgrades.
+
+`RootlessControlPlane`
+: Setting this flag configures the kubeadm deployed control plane component static Pod containers
+for `kube-apiserver`, `kube-controller-manager`, `kube-scheduler` and `etcd` to run as non-root users.
+If the flag is not set, those components run as root. You can change the value of this feature gate before
+you upgrade to a newer version of Kubernetes.
+
+`UnversionedKubeletConfigMap`
+: This flag controls the name of the {{< glossary_tooltip text="ConfigMap" term_id="configmap" >}} where kubeadm stores
+kubelet configuration data. With this flag not specified or set to `true`, the ConfigMap is named `kubelet-config`.
+If you set this flag to `false`, the name of the ConfigMap includes the major and minor version for Kubernetes
+(for example: `kubelet-config-{{< skew currentVersion >}}`). Kubeadm ensures that RBAC rules for reading and writing
+that ConfigMap are appropriate for the value you set. When kubeadm writes this ConfigMap (during `kubeadm init`
+or `kubeadm upgrade apply`), kubeadm respects the value of `UnversionedKubeletConfigMap`. When reading that ConfigMap
+(during `kubeadm join`, `kubeadm reset`, `kubeadm upgrade ...`), kubeadm attempts to use unversioned ConfigMap name first;
+if that does not succeed, kubeadm falls back to using the legacy (versioned) name for that ConfigMap.
+
+{{< note >}}
+Setting `UnversionedKubeletConfigMap` to `false` is supported but **deprecated**.
+{{< /note >}}
 
 ### Adding kube-proxy parameters {#kube-proxy}
 
@@ -138,22 +198,49 @@ For information about enabling IPVS mode with kubeadm see:
 For information about passing flags to control plane components see:
 - [control-plane-flags](/docs/setup/production-environment/tools/kubeadm/control-plane-flags/)
 
+### Running kubeadm without an Internet connection {#without-internet-connection}
+
+For running kubeadm without an Internet connection you have to pre-pull the required control-plane images.
+
+You can list and pull the images using the `kubeadm config images` sub-command:
+
+```shell
+kubeadm config images list
+kubeadm config images pull
+```
+
+You can pass `--config` to the above commands with a [kubeadm configuration file](#config-file)
+to control the `kubernetesVersion` and `imageRepository` fields.
+
+All default `k8s.gcr.io` images that kubeadm requires support multiple architectures.
+
 ### Using custom images {#custom-images}
 
 By default, kubeadm pulls images from `k8s.gcr.io`. If the
 requested Kubernetes version is a CI label (such as `ci/latest`)
-`gcr.io/kubernetes-ci-images` is used.
+`gcr.io/k8s-staging-ci-images` is used.
 
 You can override this behavior by using [kubeadm with a configuration file](#config-file).
 Allowed customization are:
 
+* To provide `kubernetesVersion` which affects the version of the images.
 * To provide an alternative `imageRepository` to be used instead of
   `k8s.gcr.io`.
-* To set `useHyperKubeImage` to `true` to use the HyperKube image.
-* To provide a specific `imageRepository` and `imageTag` for etcd or DNS add-on.
+* To provide a specific `imageRepository` and `imageTag` for etcd or CoreDNS.
 
-Please note that the configuration field `kubernetesVersion` or the command line flag
-`--kubernetes-version` affect the version of the images.
+Image paths between the default `k8s.gcr.io` and a custom repository specified using
+`imageRepository` may differ for backwards compatibility reasons. For example,
+one image might have a subpath at `k8s.gcr.io/subpath/image`, but be defaulted
+to `my.customrepository.io/image` when using a custom repository.
+
+To ensure you push the images to your custom repository in paths that kubeadm
+can consume, you must:
+
+* Pull images from the defaults paths at `k8s.gcr.io` using `kubeadm config images {list|pull}`.
+* Push images to the paths from `kubeadm config images list --config=config.yaml`,
+where `config.yaml` contains the custom `imageRepository`, and/or `imageTag`
+for etcd and CoreDNS.
+* Pass the same `config.yaml` to `kubeadm init`.
 
 ### Uploading control-plane certificates to the cluster
 
@@ -204,19 +291,6 @@ The flag passes the appropriate [`--hostname-override`](/docs/reference/command-
 value to the kubelet.
 
 Be aware that overriding the hostname can [interfere with cloud providers](https://github.com/kubernetes/website/pull/8873).
-
-### Running kubeadm without an internet connection
-
-For running kubeadm without an internet connection you have to pre-pull the required control-plane images.
-
-You can list and pull the images using the `kubeadm config images` sub-command:
-
-```shell
-kubeadm config images list
-kubeadm config images pull
-```
-
-All images that kubeadm requires such as `k8s.gcr.io/kube-*`, `k8s.gcr.io/etcd` and `k8s.gcr.io/pause` support multiple architectures.
 
 ### Automating kubeadm
 

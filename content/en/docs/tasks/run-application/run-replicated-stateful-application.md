@@ -379,7 +379,7 @@ This might impact other applications on the Node, so it's best to
 **only do this in a test cluster**.
 
 ```shell
-kubectl drain <node-name> --force --delete-local-data --ignore-daemonsets
+kubectl drain <node-name> --force --delete-emptydir-data --ignore-daemonsets
 ```
 
 Now you can watch as the Pod reschedules on a different Node:
@@ -532,7 +532,7 @@ kubectl delete pvc data-mysql-4
 ## {{% heading "whatsnext" %}}
 
 * Learn more about [scaling a StatefulSet](/docs/tasks/run-application/scale-stateful-set/).
-* Learn more about [debugging a StatefulSet](/docs/tasks/debug-application-cluster/debug-stateful-set/).
+* Learn more about [debugging a StatefulSet](/docs/tasks/debug/debug-application/debug-statefulset/).
 * Learn more about [deleting a StatefulSet](/docs/tasks/run-application/delete-stateful-set/).
 * Learn more about [force deleting StatefulSet Pods](/docs/tasks/run-application/force-delete-stateful-set-pod/).
 * Look in the [Helm Charts repository](https://artifacthub.io/)

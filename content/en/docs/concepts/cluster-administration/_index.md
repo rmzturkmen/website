@@ -59,12 +59,12 @@ Before choosing a guide, here are some considerations:
 
 * [Using Sysctls in a Kubernetes Cluster](/docs/tasks/administer-cluster/sysctl-cluster/) describes to an administrator how to use the `sysctl` command-line tool to set kernel parameters .
 
-* [Auditing](/docs/tasks/debug-application-cluster/audit/) describes how to interact with Kubernetes' audit logs.
+* [Auditing](/docs/tasks/debug/debug-cluster/audit/) describes how to interact with Kubernetes' audit logs.
 
 ### Securing the kubelet
   * [Control Plane-Node communication](/docs/concepts/architecture/control-plane-node-communication/)
-  * [TLS bootstrapping](/docs/reference/command-line-tools-reference/kubelet-tls-bootstrapping/)
-  * [Kubelet authentication/authorization](/docs/reference/command-line-tools-reference/kubelet-authentication-authorization/)
+  * [TLS bootstrapping](/docs/reference/access-authn-authz/kubelet-tls-bootstrapping/)
+  * [Kubelet authentication/authorization](/docs/reference/acess-authn-authz/kubelet-authn-authz/)
 
 ## Optional Cluster Services
 

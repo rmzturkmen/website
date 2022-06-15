@@ -17,9 +17,9 @@ weight: 20
 [레이블 셀렉터](/ko/docs/concepts/overview/working-with-objects/labels/)를 사용하여 선택을 용이하게 한다.
 보통 스케줄러가 자동으로 합리적인 배치(예: 자원이 부족한 노드에 파드를 배치하지 않도록
 노드 간에 파드를 분배하는 등)를 수행하기에 이러한 제약 조건은 필요하지 않지만
-간혹 파드가 배포할 노드를 제어해야 하는 경우가 있다.
-예를 들어 SSD가 장착된 머신에 파드가 연결되도록 하거나 또는 동일한 가용성 영역(availability zone)에서
-많은 것을 통신하는 두 개의 서로 다른 서비스의 파드를 같이 배치할 수 있다.
+간혹 파드가 배포될 노드를 제어해야 하는 경우가 있다.
+예를 들어 SSD가 장착된 머신에 파드가 배포되도록 하거나 또는 많은 통신을 하는 두 개의 서로 다른 서비스의 파드를
+동일한 가용성 영역(availability zone)에 배치할 수 있다.
 
 
 <!-- body -->
@@ -72,7 +72,7 @@ spec:
 ## 넘어가기 전에: 내장 노드 레이블들 {#built-in-node-labels}
 
 [붙인](#1-단계-노드에-레이블-붙이기) 레이블뿐만 아니라, 노드에는
-표준 레이블 셋이 미리 채워져 있다. 이들 목록은 [잘 알려진 레이블, 어노테이션 및 테인트](/docs/reference/kubernetes-api/labels-annotations-taints/)를 참고한다.
+표준 레이블 셋이 미리 채워져 있다. 이들 목록은 [잘 알려진 레이블, 어노테이션 및 테인트](/ko/docs/reference/labels-annotations-taints/)를 참고한다.
 
 {{< note >}}
 이 레이블들의 값은 클라우드 공급자에 따라 다르고 신뢰성이 보장되지 않는다.
@@ -125,7 +125,7 @@ spec:
 이름의 "IgnoredDuringExecution" 부분은 `nodeSelector` 작동 방식과 유사하게 노드의
 레이블이 런타임 중에 변경되어 파드의 어피니티 규칙이 더 이상 충족되지 않으면 파드가 그 노드에서
 동작한다는 의미이다. 향후에는 파드의 노드 어피니티 요구 사항을 충족하지 않는 노드에서 파드를 제거한다는
-점을 제외하고는 `preferredDuringSchedulingIgnoredDuringExecution` 와 동일한 `requiredDuringSchedulingIgnoredDuringExecution` 를 제공할 계획이다.
+점을 제외하고는 `requiredDuringSchedulingIgnoredDuringExecution` 와 동일한 `requiredDuringSchedulingRequiredDuringExecution` 를 제공할 계획이다.
 
 따라서 `requiredDuringSchedulingIgnoredDuringExecution` 의 예로는 "인텔 CPU가 있는 노드에서만 파드 실행"이
 될 수 있고, `preferredDuringSchedulingIgnoredDuringExecution` 의 예로는 "장애 조치 영역 XYZ에 파드 집합을 실행하려고
@@ -265,22 +265,22 @@ PodSpec에 지정된 NodeAffinity도 적용된다.
 
 `labelSelector` 와 `topologyKey` 외에도 `labelSelector` 와 일치해야 하는 네임스페이스 목록 `namespaces` 를
 선택적으로 지정할 수 있다(이것은 `labelSelector` 와 `topologyKey` 와 같은 수준의 정의이다).
-생략되어있거나 비어있을 경우 어피니티/안티-어피니티 정의가 있는 파드의 네임스페이스가 기본 값이다.
+생략되어 있거나 비어있을 경우 어피니티/안티-어피니티 정의가 있는 파드의 네임스페이스가 기본 값이다.
 
 파드를 노드에 스케줄하려면 `requiredDuringSchedulingIgnoredDuringExecution` 어피니티와 안티-어피니티와
 연관된 `matchExpressions` 가 모두 충족되어야 한다.
 
 #### 네임스페이스 셀렉터
-{{< feature-state for_k8s_version="v1.21" state="alpha" >}}
+{{< feature-state for_k8s_version="v1.22" state="beta" >}}
 
 사용자는 네임스페이스 집합에 대한 레이블 쿼리인 `namespaceSelector` 를 사용하여 일치하는 네임스페이스를 선택할 수도 있다.
 어피니티 용어는 `namespaceSelector` 에서 선택한 네임스페이스와 `namespaces` 필드에 나열된 네임스페이스의 결합에 적용된다.
 빈 `namespaceSelector` ({})는 모든 네임스페이스와 일치하는 반면, null 또는 빈 `namespaces` 목록과
 null `namespaceSelector` 는 "이 파드의 네임스페이스"를 의미한다.
 
-이 기능은 알파이며 기본적으로 비활성화되어 있다. kube-apiserver 및 kube-scheduler 모두에서
+이 기능은 베타이며 기본으로 활성화되어 있다. kube-apiserver 및 kube-scheduler 모두에서
 [기능 게이트](/ko/docs/reference/command-line-tools-reference/feature-gates/)
-`PodAffinityNamespaceSelector` 를 설정하여 활성화할 수 있다.
+`PodAffinityNamespaceSelector` 를 사용하여 비활성화할 수 있다.
 
 #### 더 실용적인 유스케이스
 
@@ -402,7 +402,7 @@ web-server-1287567482-s330j    1/1       Running   0          7m        10.192.3
 `nodeName` 은 PodSpec의 필드이다. 만약 비어있지 않으면, 스케줄러는
 파드를 무시하고 명명된 노드에서 실행 중인 kubelet이
 파드를 실행하려고 한다. 따라서 만약 PodSpec에 `nodeName` 가
-제공된 경우, 노드 선텍을 위해 위의 방법보다 우선한다.
+제공된 경우, 노드 선택을 위해 위의 방법보다 우선한다.
 
 `nodeName` 을 사용해서 노드를 선택할 때의 몇 가지 제한은 다음과 같다.
 

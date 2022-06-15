@@ -31,7 +31,7 @@ min-kubernetes-server-version: v1.10
 1. MongoDB를 실행하기 위해 디플로이먼트를 생성한다.
 
     ```shell
-    kubectl apply -f https://k8s.io/examples/application/guestbook/mongo-deployment.yaml
+    kubectl apply -f https://k8s.io/examples/application/mongodb/mongo-deployment.yaml
     ```
 
     성공적인 명령어의 출력은 디플로이먼트가 생성됐다는 것을 확인해준다.
@@ -84,7 +84,7 @@ min-kubernetes-server-version: v1.10
 2. MongoDB를 네트워크에 노출시키기 위해 서비스를 생성한다.
 
     ```shell
-    kubectl apply -f https://k8s.io/examples/application/guestbook/mongo-service.yaml
+    kubectl apply -f https://k8s.io/examples/application/mongodb/mongo-service.yaml
     ```
 
     성공적인 커맨드의 출력은 서비스가 생성되었다는 것을 확인해준다.
@@ -111,7 +111,6 @@ min-kubernetes-server-version: v1.10
     ```shell
     # mongo-75f59d57f4-4nd6q 를 당신의 파드 이름으로 대체한다.
     kubectl get pod mongo-75f59d57f4-4nd6q --template='{{(index (index .spec.containers 0).ports 0).containerPort}}{{"\n"}}'
-
     ```
 
     출력은 파드 내 MongoDB 포트 번호를 보여준다.
@@ -124,7 +123,7 @@ min-kubernetes-server-version: v1.10
 
 ## 파드의 포트를 로컬 포트로 포워딩하기
 
-1.  	`kubectl port-forward` 명령어는 파드 이름과 같이 리소스 이름을 사용하여 일치하는 파드를 선택해 포트 포워딩하는 것을 허용한다.
+1.  `kubectl port-forward` 명령어는 파드 이름과 같이 리소스 이름을 사용하여 일치하는 파드를 선택해 포트 포워딩하는 것을 허용한다.
 
 
     ```shell
@@ -177,7 +176,7 @@ min-kubernetes-server-version: v1.10
 
 3.  MongoDB 커맨드라인 프롬프트에 `ping` 명령을 입력한다.
 
-    ```shell
+    ```
     db.runCommand( { ping: 1 } )
     ```
 
